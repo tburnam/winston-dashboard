@@ -18,7 +18,7 @@ import {
 } from 'reactstrap';
 
 const levels = {
-  silly: { class: 'text-success', label: 'Silly', value: 5 },
+  // silly: { class: 'text-success', label: 'Silly', value: 5 },
   debug: { class: 'text-muted', label: 'Debug', value: 4 },
   verbose: { class: 'text-primary', label: 'Verbose', value: 3 },
   info: { class: 'text-info', label: 'Info', value: 2 },
@@ -91,6 +91,7 @@ class App extends Component {
     }));
   };
 
+
   get sourceSelector() {
     return (
       <InputGroup>
@@ -132,7 +133,7 @@ class App extends Component {
         </InputGroupAddon>
         <Dropdown
           onChange={this.selectLevelFilter}
-          value={this.getLevel(this.state.levelFilter).label}
+          value={this.getLevel('info').label}
           options={levelNames.map(level => levels[level].label)}
           label="Select Minimum Filter Level"
         />
@@ -155,26 +156,65 @@ class App extends Component {
             ({ level }) => this.getLevel(level).value <= levelFilterValue
           );
 
+    console.log(logs);
     return inputFilter == ''
       ? logs
       : logs.filter(log => log.message.toLowerCase().includes(textFilter));
   }
 
   get table() {
+    let formatMessage = message => {
+      // Regex for [content]
+      console.log("here");
+      var contentRegex = /\[(.*?)\](?=:)/g;
+      var requestRegex = /[Rr][Ee][Qq][Uu][Ee][Ss][Tt]/g;
+      var roleRegex = /Communicator(?=])|Worker.*(?=])|Video(?=])|Manager(?=])|Firebase(?=])/g
+      var singleQuoteRegex = /(?<=').*(?=')/g
+
+      var contentRegexResults = message.match(contentRegex) || [];
+      var requestRegexResults = message.match(requestRegex) || [];
+      var roleRegexResults = message.match(roleRegex) || [];
+      var singleQuoteRegexResults = message.match(singleQuoteRegex) || [];
+
+
+      for (var item of contentRegexResults) {
+        message = message.replace(item, `<b>${item}</b>`);
+      };
+
+      for (var item of requestRegexResults) {
+        message = message.replace(item, `<span id='requestStyle'>${item}</span>`);
+      };
+
+      for (var item of roleRegexResults) {
+        message = message.replace(item, `<span id='roleStyle'>${item}</span>`);
+      };
+
+      for (var item of singleQuoteRegexResults) {
+        message = message.replace(item, `<span id='singleQuoteStyle'>${item}</span>`);
+      };
+
+      return message;
+    }
+
     return (
       <div>
         <div style={{ height: '60%', overflowY: 'scroll' }}>
           <Table>
             <thead>
               <tr>
+                <th>#</th>
                 <th>Level</th>
+                <th>Id</th>
+                <th>Action</th>
                 <th>Message</th>
+                <th>File</th>
                 <th>Timestamp</th>
               </tr>
             </thead>
             <tbody>
-              {this.logs.map(({ level, message, timestamp }) => (
+              {this.logs.map(({ level, message, timestamp, id, action, file}, index) => (
                 <tr>
+                  <td>{index}</td>
                   <td
                     className={
                       this.getLevel(level).class + ' font-weight-bold '
@@ -182,8 +222,11 @@ class App extends Component {
                   >
                     {level}
                   </td>
-                  <td>{message}</td>
-                  <td>{moment(timestamp).format('LLLL')}</td>
+                  <td>{id}</td>
+                  <td>{action}</td>
+                  <td key="inner" dangerouslySetInnerHTML={{__html: formatMessage(message)}}></td>
+                  <td>{file}</td>
+                  <td>{moment(timestamp).format('L LTS')}</td>
                 </tr>
               ))}
             </tbody>
@@ -265,7 +308,7 @@ class App extends Component {
       <Container fluid style={{ marginTop: '3rem' }}>
         <Row>
           <Col className="text-center">
-            <h1>Winston Dashboard</h1>
+            <h1>GreenTiger Telemetry Dashboard</h1>
           </Col>
         </Row>
         <Row className="justify-content-sm-center&quot;">
